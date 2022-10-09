@@ -1,3 +1,7 @@
 data/
+saved_models/
+lightning_logs
+mlflow.db
+artifacts/
+.ipynb_checkpoints
 cifar-10-batches-py/
-.ipynb_checkpoints/
