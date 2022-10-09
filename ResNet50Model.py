@@ -9,6 +9,7 @@ class Block(pl.LightningModule):
         self.start_expansion = start_expansion
         self.end_expansion = end_expansion
         self.stride = stride
+        self.residual_rescale = None
 
         self.conv_1 = nn.Conv2d(in_channels=channels*self.start_expansion, 
                                 out_channels=channels, 
@@ -29,13 +30,14 @@ class Block(pl.LightningModule):
                                 padding=0)
         self.batch_norm_3 = nn.BatchNorm2d(self.end_expansion*channels)
 
-        self.residual_rescale = nn.Sequential(
-                nn.Conv2d(channels*self.start_expansion, 
-                          channels*self.end_expansion, 
-                          kernel_size=1, 
-                          stride=self.stride),
-                nn.BatchNorm2d(channels*self.end_expansion)
-            )
+        if self.start_expansion != self.end_expansion:
+            self.residual_rescale = nn.Sequential(
+                    nn.Conv2d(channels*self.start_expansion, 
+                            channels*self.end_expansion, 
+                            kernel_size=1, 
+                            stride=self.stride),
+                    nn.BatchNorm2d(channels*self.end_expansion)
+                )
 
         self.relu = nn.ReLU()
 
@@ -45,7 +47,7 @@ class Block(pl.LightningModule):
         x = self.relu(self.batch_norm_2(self.conv_2(x)))
         x = self.batch_norm_3(self.conv_3(x))
 
-        if input_x.shape[1] != x.shape[1] or self.stride != 1:
+        if self.residual_rescale is not None:
             input_x = self.residual_rescale(input_x)
         
         # skip connection
@@ -103,7 +105,7 @@ class MyResNet50(pl.LightningModule):
             if i == 0:
                 blocks_layers.append(Block(channels=bl_channels, start_expansion=2, end_expansion=self.expansion, stride=stride))
             else:
-                blocks_layers.append(Block(channels=bl_channels, start_expansion=self.expansion, end_expansion=self.expansion, stride=stride))          
+                blocks_layers.append(Block(channels=bl_channels, start_expansion=self.expansion, end_expansion=self.expansion, stride=1))          
                 
 
         return nn.Sequential(*blocks_layers)
@@ -134,8 +136,8 @@ class MyResNet50(pl.LightningModule):
         "optimizer": optimizer,
         "lr_scheduler": {
             "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.1, patience=5),
-            "interval": "epoch",
+            # "interval": "epoch",
             "monitor": "validation_loss",
-            "frequency": 1
+            # "frequency": 5
         },
     }
