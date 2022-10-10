@@ -3,7 +3,6 @@ import torch
 import torchvision.transforms as transforms
 import pytorch_lightning as pl
 from ResNet50Model import MyResNet50
-from RN50_jay import RN50
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 import ssl
