@@ -2,6 +2,8 @@ import torch
 import pytorch_lightning as pl
 from torchmetrics import Accuracy
 import torch.nn as nn
+import numpy as np
+import sys
 
 class Block(pl.LightningModule):
     def __init__(self, channels, start_expansion, end_expansion, stride):
@@ -141,3 +143,22 @@ class MyResNet50(pl.LightningModule):
             # "frequency": 5
         },
     }
+
+    def predict(self, input_array: np.ndarray) -> np.ndarray:
+        # Given a batch of examples return a batch of predicted classes.
+        preds_val = self(torch.Tensor(input_array))
+        
+        return preds_val.cpu().detach().numpy()
+
+    def certainty(self, input_array: np.ndarray) -> np.ndarray:
+        # Given a batch of examples return a batch of certainty levels.
+        predictions = self.predict(input_array)
+        epsilon = sys.float_info.min
+
+        predictive_entropies = []
+        for pred in predictions:
+            pe = -np.sum( np.mean(pred, axis=0) * np.log(np.mean(pred, axis=0) + epsilon),
+                    axis=-1)
+            predictive_entropies.append(pe)
+
+        return predictive_entropies
