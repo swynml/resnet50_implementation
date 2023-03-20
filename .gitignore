@@ -6,3 +6,4 @@ mlflow.db
 artifacts/
 .ipynb_checkpoints
 cifar-10-batches-py/
+.DS_Store
